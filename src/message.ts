@@ -3,7 +3,7 @@ import { Deko } from "./client.ts";
 import { FrameClass, isCtrl, isNonCtrl, OpCode } from "./frame.ts";
 // import { CloseCode } from "./close.ts";
 
-/** Represents a WebSocket fragment (message). */
+/** Represents a WebSocket message. */
 export interface Message {
   /** Indicates that this is the final fragment in a message */
   fin: boolean;
