@@ -2,17 +2,21 @@
 
 [![Built with the Deno Standard Library](https://raw.githubusercontent.com/denoland/deno_std/main/badge.svg)](https://deno.land/std)
 
-**_Deko_** is a simple WebSocket client for Deno. 
+**_Deko_** is a simple WebSocket client for Deno.
 
 > [!WARNING]
-> If you want to connect WebSocket on browsers, use [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) instead.
+> If you want to connect WebSocket on browsers, use
+> [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
+> instead.
 
 ## Features
 
 - [x] Easy to use.
 - [x] Supports custom headers.
-- [x] Passes the [Autobahn testsuite](https://github.com/crossbario/autobahn-testsuite). [^report]
-- [x] Follows [RFC 6455](https://datatracker.ietf.org/doc/html/rfc6455) WebSocket implementation.
+- [x] Passes the
+      [Autobahn testsuite](https://github.com/crossbario/autobahn-testsuite). [^report]
+- [x] Follows [RFC 6455](https://datatracker.ietf.org/doc/html/rfc6455)
+      WebSocket implementation.
 
 ## Usage
 
@@ -47,11 +51,10 @@ const client = new Deko({ uri: "websocket url goes here" });
 
 client.onOpen = () => {
   console.log("Connected to WebSocket server!");
-}
+};
 
 await client.connect();
 ```
-
 
 #### Receives a text message from WebSocket server
 
@@ -64,7 +67,7 @@ client.onMessage = (_, message) => {
   if (message.opcode === OpCode.TextFrame) {
     console.log(new TextDecoder().decode(message.payload));
   }
-}
+};
 
 await client.connect();
 ```

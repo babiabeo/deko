@@ -1,13 +1,13 @@
 {
   "name": "@babia/deko",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "imports": {
     "@std/bytes": "jsr:@std/bytes@^0.218.2",
     "@std/encoding": "jsr:@std/encoding@^0.218.2",
     "@std/io": "jsr:@std/io@^0.218.2"
   },
   "exports": "./mod.ts",
-  "exclude": [".vscode", "autobahn", "README.md", "LICENSE", "docs"],
+  "exclude": [".vscode", "autobahn", "docs"],
   "tasks": {
     "autobahn": "deno run --allow-net test/autobahn.ts",
     "lint": "deno fmt --check && deno lint",
