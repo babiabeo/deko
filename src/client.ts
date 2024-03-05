@@ -1,5 +1,6 @@
 import { writeAll } from "@std/io";
 import { concat } from "@std/bytes";
+
 import { decode, encode, hton16, hton64, isUTF8 } from "./_utils.ts";
 import { createSecKey, readHandshake, verifyHandshake } from "./handshake.ts";
 import { Message, readMessage } from "./message.ts";
@@ -30,6 +31,7 @@ export enum DekoState {
   CLOSED,
 }
 
+/** Config fields for {@linkcode Deko}. */
 export interface DekoConfig {
   /** The uri used to establish the WebSocket connection. */
   uri: string | URL;
@@ -121,7 +123,8 @@ export class Deko {
     return this.#lastPong;
   }
 
-  async connect() {
+  /** Connects to WebSocket server. */
+  async connect(): Promise<void> {
     if (this.state !== DekoState.CLOSED) {
       throw new Deno.errors.ConnectionRefused(
         `The client state is: ${DekoState[this.state]}`,

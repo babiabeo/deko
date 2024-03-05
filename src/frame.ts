@@ -1,4 +1,5 @@
 import { Reader } from "@std/io";
+
 import { unmask } from "./mask.ts";
 import { Deko } from "./client.ts";
 import { CloseCode } from "./close.ts";

@@ -1,17 +1,16 @@
 import { concat } from "@std/bytes";
 import { Deko } from "./client.ts";
 import { FrameClass, isCtrl, isNonCtrl, OpCode } from "./frame.ts";
-// import { CloseCode } from "./close.ts";
 
 /** Represents a WebSocket message. */
 export interface Message {
-  /** Indicates that this is the final fragment in a message */
+  /** Indicates that this is the final fragment in a message. */
   fin: boolean;
   /** The frame type of the message. */
   opcode: OpCode;
   /** The payload data of the message. */
   payload: Uint8Array;
-  /** The key used to mask all frames sent from the client to the websocket. */
+  /** The key used to mask all frames sent from the client to the server. */
   mask?: Uint8Array;
 }
 

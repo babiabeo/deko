@@ -11,30 +11,37 @@
 
 - [x] Easy to use.
 - [x] Supports custom headers.
-- [x] Passes the [Autobahn testsuite](https://github.com/crossbario/autobahn-testsuite).
+- [x] Passes the [Autobahn testsuite](https://github.com/crossbario/autobahn-testsuite). [^report]
 - [x] Follows [RFC 6455](https://datatracker.ietf.org/doc/html/rfc6455) WebSocket implementation.
 
 ## Usage
 
-To use this module, add this to your JS/TS file:
+This package is available on [jsr.io](https://jsr.io).
 
-```ts
-import * as deko from "https://deno.land/x/deko@0.1.0/mod.ts";
+Use `deno add` command to add this package to your project:
+
+```
+deno add @babia/deko
 ```
 
-> [!NOTE]
-> This module is also available on [jsr.io](https://jsr.io). See [@babia/deko](https://jsr.io/@babia/deko).
+Then, import it in your source file:
 
-## API Docs
+```ts
+import { Deko } from "@babia/deko";
+```
 
-If you want to see module API, please check out the documentation [here](https://deno.land/x/deko?doc).
+Or use `jsr:` specifier if you want to use an install step.
+
+```ts
+import { Deko } from "jsr:@babia/deko@^0.1.0";
+```
 
 ## Examples
 
 #### Open event handle
 
 ```ts
-import { Deko, OpCode } from "https://deno.land/x/deko@0.1.0/mod.ts";
+import { Deko, OpCode } from "@babia/deko";
 
 const client = new Deko({ uri: "websocket url goes here" });
 
@@ -49,7 +56,7 @@ await client.connect();
 #### Receives a text message from WebSocket server
 
 ```ts
-import { Deko, OpCode } from "https://deno.land/x/deko@0.1.0/mod.ts";
+import { Deko, OpCode } from "@babia/deko";
 
 const client = new Deko({ uri: "websocket url goes here" });
 
@@ -65,7 +72,7 @@ await client.connect();
 #### Sends a message to WebSocket server
 
 ```ts
-import { Deko, OpCode } from "https://deno.land/x/deko@0.1.0/mod.ts";
+import { Deko, OpCode } from "@babia/deko";
 
 const client = new Deko({ uri: "websocket url goes here" });
 
@@ -78,4 +85,6 @@ setTimeout(async () => {
 
 ## License
 
-This repository/module is under **MIT License**. See [LICENSE](./LICENSE).
+This repository/package is under **MIT License**. See [LICENSE](./LICENSE).
+
+[^report]: https://babiabeo.github.io/autobahn/deko/

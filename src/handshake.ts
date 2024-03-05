@@ -1,5 +1,6 @@
 import { Reader } from "@std/io";
 import { encodeBase64 } from "@std/encoding/base64";
+
 import { decode, encode } from "./_utils.ts";
 import { BadHandshakeError } from "./errors.ts";
 

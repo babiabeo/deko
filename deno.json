@@ -6,6 +6,7 @@
     "@std/encoding": "jsr:@std/encoding@^0.218.2",
     "@std/io": "jsr:@std/io@^0.218.2"
   },
+  "exports": "./mod.ts",
   "exclude": [".vscode", "autobahn", "README.md", "LICENSE", "docs"],
   "tasks": {
     "autobahn": "deno run --allow-net test/autobahn.ts",
