@@ -1,4 +1,5 @@
 import { concat } from "@std/bytes";
+
 import { Deko } from "./client.ts";
 import { FrameClass, isCtrl, isNonCtrl, OpCode } from "./frame.ts";
 
@@ -24,18 +25,16 @@ export async function readMessage(client: Deko) {
       const { fin, opcode, payload, mask } = frame.data;
 
       if (isCtrl(opcode)) {
-        const msg: Message = { fin, opcode, payload, mask };
-        return msg;
+        return { fin, opcode, payload, mask };
       }
 
-      if (!frame.data.fin) {
-        client.fragments.push({ fin, opcode, payload, mask });
+      if (!fin) {
+        client.fragments.push({ fin: false, opcode, payload, mask });
         continue;
       }
 
       if (client.fragments.length === 0) {
-        const msg: Message = { fin, opcode, payload, mask };
-        return msg;
+        return { fin: true, opcode, payload, mask };
       }
 
       if (isNonCtrl(opcode)) {
@@ -43,17 +42,7 @@ export async function readMessage(client: Deko) {
         return;
       }
 
-      const data = concat([
-        ...client.fragments.map((mes) => mes.payload),
-        payload,
-      ]);
-
-      const msg: Message = {
-        fin,
-        mask,
-        opcode: client.fragments[0].opcode,
-        payload: data,
-      };
+      const msg = finalMessage(client.fragments, payload, mask);
 
       client.fragments = [];
       return msg;
@@ -62,4 +51,15 @@ export async function readMessage(client: Deko) {
     client.onError(e);
     return;
   }
+}
+
+/** Concatenate all fragments to a single message. */
+function finalMessage(
+  fragments: Message[],
+  fin: Uint8Array,
+  mask?: Uint8Array,
+): Message {
+  const opcode = fragments[0].opcode;
+  const payload = concat([...fragments.map((m) => m.payload), fin]);
+  return { fin: true, opcode, payload, mask };
 }

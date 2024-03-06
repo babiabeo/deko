@@ -1,7 +1,7 @@
 import { writeAll } from "@std/io";
 import { concat } from "@std/bytes";
 
-import { decode, encode, hton16, hton64, isUTF8 } from "./_utils.ts";
+import { decode, encode, getUint16, hton16, hton64, isUTF8 } from "./_utils.ts";
 import { createSecKey, readHandshake, verifyHandshake } from "./handshake.ts";
 import { Message, readMessage } from "./message.ts";
 import {
@@ -103,7 +103,11 @@ export class Deko {
     return this.#state;
   }
 
-  /** Headers used when connecting. */
+  /**
+   * Headers used when connecting.
+   *
+   * @deprecated Will be removed in `v0.1.3`
+   */
   get headers(): Headers {
     return this.#headers;
   }
@@ -202,14 +206,14 @@ export class Deko {
     const maskey = mask ?? createMaskingKey();
 
     if (len < 126) {
-      header[1] = len;
+      header[1] = len | 0x80;
     } else if (len <= 0xFFFF) {
-      header[1] = 126;
+      header[1] = 126 | 0x80;
       header.push(
         ...hton16(len),
       );
     } else if (len <= 0x7FFFFFFF) {
-      header[1] = 127;
+      header[1] = 127 | 0x80;
       header.push(
         ...hton64(len),
       );
@@ -220,13 +224,12 @@ export class Deko {
       });
     }
 
-    let head = new Uint8Array(header);
-    head[1] |= 0x80;
-    head = concat([head, maskey]);
     unmask(payload, maskey);
-    head = concat([head, payload]);
 
-    await writeAll(this.#conn, head);
+    const head = new Uint8Array(header);
+    const frame = concat([head, maskey, payload]);
+
+    await writeAll(this.#conn, frame);
   }
 
   /** Closes the WebSocket connection. */
@@ -236,30 +239,27 @@ export class Deko {
     }
 
     const loose = !!(options.loose);
-    const closeCode = options.code !== undefined
-      ? loose ? options.code : handleCloseCode(options.code)
+    const code = options.code !== undefined
+      ? (loose ? options.code : handleCloseCode(options.code))
       : CloseCode.NormalClosure;
-    const closeReason = options.reason ?? "";
+    const reason = encode(options.reason ?? "");
 
     this.#state = DekoState.CLOSING;
     try {
-      let closeFrame: Uint8Array;
-      if (closeCode > 0) {
-        const reason = encode(closeReason);
-        closeFrame = new Uint8Array(reason.byteLength + 2);
-        closeFrame.set([closeCode >> 8, closeCode & 0xFF]);
-        closeFrame.set(reason, 2);
-      } else {
-        closeFrame = new Uint8Array();
+      let data = new Uint8Array(0);
+      if (code > 0) {
+        data = new Uint8Array(2 + reason.byteLength);
+        data.set(hton16(code));
+        data.set(reason, 2);
       }
 
-      await this.send({ opcode: OpCode.Close, payload: closeFrame, fin: true });
+      await this.send({ opcode: OpCode.Close, payload: data, fin: true });
     } catch (e) {
       this.onError(e);
     } finally {
       this.fragments = [];
       this.conn.close();
-      this.onClose(closeCode, closeReason);
+      this.onClose(code, decode(reason));
       this.#state = DekoState.CLOSED;
     }
   }
@@ -278,14 +278,14 @@ export class Deko {
     this.#headers.append("Sec-WebSocket-Version", "13");
 
     if (this.#protocols.length) {
-      this.headers.append(
+      this.#headers.append(
         "Sec-WebSocket-Protocol",
         this.#protocols.join(", "),
       );
     }
 
     let request = `GET ${pathname}${search} HTTP/1.1\r\n`;
-    for (const [key, value] of this.headers) {
+    for (const [key, value] of this.#headers) {
       request += `${key}: ${value}\r\n`;
     }
     request += "\r\n";
@@ -310,9 +310,10 @@ export class Deko {
           if (msg.fin && !isUTF8(msg.payload)) {
             this.onError(new InvalidUTF8Error());
             await this.close({ code: 0, loose: true });
-          } else {
-            this.onMessage(msg);
+            break;
           }
+
+          this.onMessage(msg);
           break;
         }
         case OpCode.BinaryFrame:
@@ -339,7 +340,7 @@ export class Deko {
             break;
           }
 
-          const code = (msg.payload[0] << 8) | msg.payload[1];
+          const code = getUint16(msg.payload);
           const mes = msg.payload.subarray(2);
           if (!isUTF8(mes)) {
             this.onError(new InvalidUTF8Error());

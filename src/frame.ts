@@ -1,5 +1,6 @@
 import { Reader } from "@std/io";
 
+import { getUint16, getUint64 } from "./_utils.ts";
 import { unmask } from "./mask.ts";
 import { Deko } from "./client.ts";
 import { CloseCode } from "./close.ts";
@@ -65,7 +66,7 @@ export class FrameClass {
   }
 
   /** Returns `true` if frame data is valid. */
-  async validate() {
+  validate() {
     const { fin, rsv, opcode, len } = this.#data;
 
     if (rsv) {
@@ -74,7 +75,6 @@ export class FrameClass {
           "Reserved fields must be 0",
         ),
       );
-      await this.#client.close({ code: 0, loose: true });
       return false;
     }
 
@@ -87,7 +87,6 @@ export class FrameClass {
           "Found reserved opcode",
         ),
       );
-      await this.#client.close({ code: 0, loose: true });
       return false;
     }
 
@@ -98,7 +97,6 @@ export class FrameClass {
             "Control frame must not be fragmented",
           ),
         );
-        await this.#client.close({ code: 0, loose: true });
         return false;
       }
 
@@ -108,7 +106,6 @@ export class FrameClass {
             "Control frame payloads must not exceed 125 bytes",
           ),
         );
-        await this.#client.close({ code: 0, loose: true });
         return false;
       }
     }
@@ -120,7 +117,6 @@ export class FrameClass {
       this.#client.onError(
         new InvalidFrameError("There is no message to continue"),
       );
-      await this.#client.close({ code: 0, loose: true });
       return false;
     }
 
@@ -140,20 +136,10 @@ export class FrameClass {
 
     if (len === 126) {
       const sub = await readExact(client.conn, 2);
-      const view = new DataView(
-        sub.buffer,
-        sub.byteOffset,
-        sub.byteLength,
-      );
-      len = view.getUint16(0);
+      len = getUint16(sub);
     } else if (len === 127) {
       const sub = await readExact(client.conn, 8);
-      const view = new DataView(
-        sub.buffer,
-        sub.byteOffset,
-        sub.byteLength,
-      );
-      const u64 = view.getBigUint64(0);
+      const u64 = getUint64(sub);
       if (u64 > BigInt(Number.MAX_SAFE_INTEGER)) {
         await client.close({
           code: CloseCode.MessageTooBig,
@@ -179,7 +165,8 @@ export class FrameClass {
       fin, rsv, opcode, len, payload, mask: key
     });
 
-    if (!(await frame.validate())) {
+    if (!frame.validate()) {
+      await client.close({ code: 0, loose: true });
       return;
     }
 

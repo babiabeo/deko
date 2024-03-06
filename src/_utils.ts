@@ -19,6 +19,7 @@ export function hton16(n: number) {
 /** host-to-network long long (htonll). */
 export function hton64(n: number): number[] {
   const bn = BigInt(n);
+  // deno-fmt-ignore
   return [
     Number((bn & 0xFF00_0000_0000_0000n) >> 56n),
     Number((bn & 0x00FF_0000_0000_0000n) >> 48n),
@@ -26,9 +27,29 @@ export function hton64(n: number): number[] {
     Number((bn & 0x0000_00FF_0000_0000n) >> 32n),
     Number((bn & 0x0000_0000_FF00_0000n) >> 24n),
     Number((bn & 0x0000_0000_00FF_0000n) >> 16n),
-    Number((bn & 0x0000_0000_0000_FF00n) >> 8n),
-    Number((bn & 0x0000_0000_0000_00FFn) >> 0n),
+    Number((bn & 0x0000_0000_0000_FF00n) >>  8n),
+    Number((bn & 0x0000_0000_0000_00FFn) >>  0n),
   ];
+}
+
+/** Get big-endian 64-bit long from buffer. */
+export function getUint64(buffer: Uint8Array) {
+  // deno-fmt-ignore
+  return (
+    (BigInt(buffer[0]) << 56n) |
+    (BigInt(buffer[1]) << 48n) |
+    (BigInt(buffer[2]) << 40n) |
+    (BigInt(buffer[3]) << 32n) |
+    (BigInt(buffer[4]) << 24n) |
+    (BigInt(buffer[5]) << 16n) |
+    (BigInt(buffer[6]) <<  8n) |
+    (BigInt(buffer[7]) <<  0n)
+  );
+}
+
+/** Get big-endian 16-bit short from buffer. */
+export function getUint16(buffer: Uint8Array) {
+  return (buffer[0] << 8) | (buffer[1] << 0);
 }
 
 /** Check if payload is a valid UTF-8. */

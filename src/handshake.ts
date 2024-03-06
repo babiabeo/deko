@@ -30,8 +30,9 @@ export async function readHandshake(reader: Reader) {
 
 export async function verifyHandshake(response: string, key: string) {
   const lines = response.split(/\r\n|\r|\n/);
-  if (!lines.shift()?.includes("101 Switching Protocols")) {
-    throw new BadHandshakeError("Server does not accept handshake");
+  const status = lines.shift();
+  if (!status?.includes("101 Switching Protocols")) {
+    throw new BadHandshakeError(`Server does not accept handshake: ${status}`);
   }
 
   let protocol = "";

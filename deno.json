@@ -1,6 +1,6 @@
 {
   "name": "@babia/deko",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "imports": {
     "@std/bytes": "jsr:@std/bytes@^0.218.2",
     "@std/encoding": "jsr:@std/encoding@^0.218.2",

@@ -37,7 +37,7 @@ import { Deko } from "@babia/deko";
 Or use `jsr:` specifier if you want to use an install step.
 
 ```ts
-import { Deko } from "jsr:@babia/deko@^0.1.0";
+import { Deko } from "jsr:@babia/deko@^0.1.2";
 ```
 
 ## Examples

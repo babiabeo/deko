@@ -5,8 +5,6 @@
  * If you want to connect WebSocket on browsers, consider to use {@linkcode WebSocket} instead.
  *
  * Reference: {@link https://datatracker.ietf.org/doc/html/rfc6455 | RFC 6455}.
- *
- * @module
  */
 
 export * from "./src/client.ts";
