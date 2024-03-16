@@ -5,6 +5,7 @@ import { unmask } from "./mask.ts";
 import { Deko } from "./client.ts";
 import { CloseCode } from "./close.ts";
 import { InvalidFrameError, ReadFrameError } from "./errors.ts";
+import { Message } from "./message.ts";
 
 /** WebSocket Opcodes define the interpretation of the payload data. */
 export enum OpCode {
@@ -66,7 +67,7 @@ export class FrameClass {
   }
 
   /** Returns `true` if frame data is valid. */
-  validate() {
+  valid(fragments: Message[]) {
     const { fin, rsv, opcode, len } = this.#data;
 
     if (rsv) {
@@ -110,10 +111,7 @@ export class FrameClass {
       }
     }
 
-    if (
-      fin && opcode === OpCode.Continuation &&
-      !this.#client.fragments.length
-    ) {
+    if (fin && opcode === OpCode.Continuation && !fragments.length) {
       this.#client.onError(
         new InvalidFrameError("There is no message to continue"),
       );
@@ -164,11 +162,6 @@ export class FrameClass {
     const frame = new FrameClass(client, {
       fin, rsv, opcode, len, payload, mask: key
     });
-
-    if (!frame.validate()) {
-      await client.close({ code: 0, loose: true });
-      return;
-    }
 
     return frame;
   }

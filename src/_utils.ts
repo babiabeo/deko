@@ -10,25 +10,21 @@ export function decode(input: BufferSource) {
 
 /** host-to-network short (htons). */
 export function hton16(n: number) {
-  return [
-    (n & 0xFF00) >> 8,
-    (n & 0x00FF) >> 0,
-  ];
+  return [(n >> 8) & 0xFF, n & 0xFF];
 }
 
 /** host-to-network long long (htonll). */
 export function hton64(n: number): number[] {
   const bn = BigInt(n);
-  // deno-fmt-ignore
   return [
-    Number((bn & 0xFF00_0000_0000_0000n) >> 56n),
-    Number((bn & 0x00FF_0000_0000_0000n) >> 48n),
-    Number((bn & 0x0000_FF00_0000_0000n) >> 40n),
-    Number((bn & 0x0000_00FF_0000_0000n) >> 32n),
-    Number((bn & 0x0000_0000_FF00_0000n) >> 24n),
-    Number((bn & 0x0000_0000_00FF_0000n) >> 16n),
-    Number((bn & 0x0000_0000_0000_FF00n) >>  8n),
-    Number((bn & 0x0000_0000_0000_00FFn) >>  0n),
+    Number((bn >> 56n) & 0xFFn),
+    Number((bn >> 48n) & 0xFFn),
+    Number((bn >> 40n) & 0xFFn),
+    Number((bn >> 32n) & 0xFFn),
+    Number((bn >> 24n) & 0xFFn),
+    Number((bn >> 16n) & 0xFFn),
+    Number((bn >> 8n) & 0xFFn),
+    Number(bn & 0xFFn),
   ];
 }
 
@@ -43,13 +39,13 @@ export function getUint64(buffer: Uint8Array) {
     (BigInt(buffer[4]) << 24n) |
     (BigInt(buffer[5]) << 16n) |
     (BigInt(buffer[6]) <<  8n) |
-    (BigInt(buffer[7]) <<  0n)
+    (BigInt(buffer[7]))
   );
 }
 
 /** Get big-endian 16-bit short from buffer. */
 export function getUint16(buffer: Uint8Array) {
-  return (buffer[0] << 8) | (buffer[1] << 0);
+  return (buffer[0] << 8) | buffer[1];
 }
 
 /** Check if payload is a valid UTF-8. */

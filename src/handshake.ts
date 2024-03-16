@@ -6,12 +6,13 @@ import { BadHandshakeError } from "./errors.ts";
 
 export async function readHandshake(reader: Reader) {
   let total = 0;
+
   const msg = new Uint8Array(1024);
   const buffer = new Uint8Array(1);
 
-  for (; total < 1024; total++) {
+  for (; total < 1024; ++total) {
     if (total > 5) {
-      const line = decode(msg.slice(total - 4, total));
+      const line = decode(msg.subarray(total - 4, total));
       if (line === "\r\n\r\n") {
         break;
       }
@@ -25,7 +26,7 @@ export async function readHandshake(reader: Reader) {
     msg[total] = buffer[0];
   }
 
-  return decode(msg.slice(0, total));
+  return decode(msg.subarray(0, total));
 }
 
 export async function verifyHandshake(response: string, key: string) {

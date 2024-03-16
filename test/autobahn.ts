@@ -12,7 +12,9 @@ async function nextTest() {
   let ws: Deko;
 
   if (currentTest > testCount) {
-    ws = new Deko({ uri: "ws://localhost:9001/updateReports?agent=deko" });
+    ws = new Deko({
+      uri: "ws://localhost:9001/updateReports?agent=deko@0.1.3",
+    });
     await ws.connect();
     return;
   }
@@ -20,7 +22,7 @@ async function nextTest() {
   console.log(`Running test case ${currentTest}/${testCount}`);
 
   ws = new Deko(
-    { uri: `ws://localhost:9001/runCase?case=${currentTest}&agent=deko` },
+    { uri: `ws://localhost:9001/runCase?case=${currentTest}&agent=deko@0.1.3` },
   );
   ws.onMessage = async (mes) => {
     await ws.send(mes);

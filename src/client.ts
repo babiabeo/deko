@@ -1,5 +1,4 @@
 import { writeAll } from "@std/io";
-import { concat } from "@std/bytes";
 
 import { decode, encode, getUint16, hton16, hton64, isUTF8 } from "./_utils.ts";
 import { createSecKey, readHandshake, verifyHandshake } from "./handshake.ts";
@@ -51,8 +50,6 @@ export class Deko {
   #lastPong: number;
   #state: DekoState;
 
-  /** The current fragments. */
-  fragments: Message[];
   /** Called when the WebSocket connection is opened. */
   onOpen: DekoOpenEvent;
   /** Called when receiving a message. */
@@ -68,7 +65,6 @@ export class Deko {
     this.#uri = new URL(config.uri);
     this.#headers = new Headers(config.headers);
 
-    this.fragments = [];
     this.onClose = () => {};
     this.onError = () => {};
     this.onMessage = () => {};
@@ -101,15 +97,6 @@ export class Deko {
   /** The state of the connection. */
   get state(): DekoState {
     return this.#state;
-  }
-
-  /**
-   * Headers used when connecting.
-   *
-   * @deprecated Will be removed in `v0.1.3`
-   */
-  get headers(): Headers {
-    return this.#headers;
   }
 
   /** The sub-protocol selected by the server. */
@@ -199,37 +186,38 @@ export class Deko {
       throw new Deno.errors.NotConnected("Client is not connected");
     }
 
+    let pos = 0;
     const { fin, opcode, payload, mask } = message;
-
     const len = payload.byteLength;
-    const header = [Number(fin) << 7 | opcode];
-    const maskey = mask ?? createMaskingKey();
+
+    // max_len = payload_len + max_header_len
+    const frame = new Uint8Array(len + 16);
+    const key = mask ?? createMaskingKey();
+
+    frame[0] = (+fin) << 7 | opcode;
 
     if (len < 126) {
-      header[1] = len | 0x80;
-    } else if (len <= 0xFFFF) {
-      header[1] = 126 | 0x80;
-      header.push(
-        ...hton16(len),
-      );
-    } else if (len <= 0x7FFFFFFF) {
-      header[1] = 127 | 0x80;
-      header.push(
-        ...hton64(len),
-      );
+      frame[1] = len | 0x80;
+      pos += 2;
+    } else if (len < 65536) {
+      frame[1] = 254; // 126 | 0x80
+      frame.set(hton16(len), 2);
+      pos += 4;
     } else {
-      return this.close({
-        code: CloseCode.MessageTooBig,
-        reason: "Frame too large",
-      });
+      frame[1] = 255; // 127 | 0x80
+      frame.set(hton64(len), 2);
+      pos += 10;
     }
 
-    unmask(payload, maskey);
+    if (len > 0) unmask(payload, key);
 
-    const head = new Uint8Array(header);
-    const frame = concat([head, maskey, payload]);
+    frame.set(key, pos);
+    pos += 4;
 
-    await writeAll(this.#conn, frame);
+    frame.set(payload, pos);
+    pos += len;
+
+    await writeAll(this.#conn, frame.subarray(0, pos));
   }
 
   /** Closes the WebSocket connection. */
@@ -242,24 +230,32 @@ export class Deko {
     const code = options.code !== undefined
       ? (loose ? options.code : handleCloseCode(options.code))
       : CloseCode.NormalClosure;
-    const reason = encode(options.reason ?? "");
+    const reason = options.reason ?? "";
 
     this.#state = DekoState.CLOSING;
+
     try {
-      let data = new Uint8Array(0);
-      if (code > 0) {
-        data = new Uint8Array(2 + reason.byteLength);
+      let pos = 0;
+      const encoded = encode(reason);
+      const maxLen = 2 + encoded.byteLength;
+      const data = new Uint8Array(maxLen);
+
+      if (code !== 0) {
         data.set(hton16(code));
-        data.set(reason, 2);
+        data.set(encoded, 2);
+        pos += maxLen;
       }
 
-      await this.send({ opcode: OpCode.Close, payload: data, fin: true });
+      await this.send({
+        opcode: OpCode.Close,
+        payload: data.subarray(0, pos),
+        fin: true,
+      });
     } catch (e) {
       this.onError(e);
     } finally {
-      this.fragments = [];
       this.conn.close();
-      this.onClose(code, decode(reason));
+      this.onClose(code, reason);
       this.#state = DekoState.CLOSED;
     }
   }
@@ -298,8 +294,9 @@ export class Deko {
 
   /** Listens and reads incoming messages. */
   async #listen() {
+    const fragments: Message[] = [];
     while (this.state === DekoState.OPEN) {
-      const msg = await readMessage(this);
+      const msg = await readMessage(this, fragments);
       if (!msg) {
         this.onError(new ReadFailedError());
         break;
